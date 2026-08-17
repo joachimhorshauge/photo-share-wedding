@@ -38,6 +38,11 @@ phone host=ip:
     #!/usr/bin/env bash
     set -uo pipefail
     if [ -z "{{host}}" ]; then echo "no LAN address found — pass one: just phone 192.168.1.23"; exit 1; fi
+    if systemctl is-active --quiet ufw 2>/dev/null; then
+      echo "  ⚠  ufw is active and denies inbound by default — the phone will time out."
+      echo "     Open the dev ports first:  just firewall"
+      echo
+    fi
     source "$(just _runner)"
     ensure_ports_free
     start '[b2  ] ' 'cd worker && DEV_HOST={{host}} npm run --silent mock'
@@ -137,6 +142,44 @@ check:
     done
     grep -q GITHUB_USER worker/wrangler.toml && { echo "  wrangler.toml ALLOWED_ORIGINS still has 'GITHUB_USER'"; fail=1; }
     [ $fail -eq 0 ] && echo "config looks deployable" || { echo; echo "fix these before deploying"; exit 1; }
+
+# --- the phone can't connect ----------------------------------------------
+
+# Open the dev ports to your own subnet (asks for sudo). ufw denies inbound by
+# default, so a phone on the same wifi reaches nothing until this is done.
+firewall:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    subnet=$(echo "{{ip}}" | awk -F. '{print $1"."$2"."$3".0/24"}')
+    echo "allowing tcp 1313, 8787, 8790 from $subnet"
+    sudo ufw allow proto tcp from "$subnet" to any port 1313,8787,8790 comment 'photo-share dev'
+    sudo ufw status | grep -E '1313|8787|8790' || true
+
+# Close them again when you're done developing.
+firewall-off:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    subnet=$(echo "{{ip}}" | awk -F. '{print $1"."$2"."$3".0/24"}')
+    sudo ufw delete allow proto tcp from "$subnet" to any port 1313,8787,8790
+
+# Everything a phone connection depends on, in one place.
+doctor:
+    #!/usr/bin/env bash
+    echo "LAN address:   {{ip}}   (phone must be on this subnet)"
+    printf 'ufw:           '
+    if systemctl is-active --quiet ufw 2>/dev/null; then
+      echo "ACTIVE — run 'just firewall' or the phone cannot connect"
+    else
+      echo "inactive"
+    fi
+    echo "bound sockets:"
+    ss -tln 2>/dev/null | grep -E ':(1313|8787|8790) ' | awk '{print "  ", $4}'
+    echo "  (0.0.0.0:* or *:* means every interface — good;"
+    echo "   127.0.0.1:* means loopback only — a phone can never reach it)"
+    echo
+    echo "from the phone's browser, try:  http://{{ip}}:8790/"
+    echo "  a 'not found' page = the network path works, so it's the app"
+    echo "  a timeout          = firewall, or the wifi isolates clients from the wired LAN"
 
 # --- housekeeping ---------------------------------------------------------
 

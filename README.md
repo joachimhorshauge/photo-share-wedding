@@ -139,12 +139,24 @@ The only way to shake out HEIC, EXIF rotation and the file-picker UX. Everything
 your LAN IP, not `localhost`, because the phone resolves these itself:
 
 ```sh
+just firewall           # once per machine — see below
 just phone              # detects your LAN address
 just phone 192.168.1.23 # or name it yourself
 ```
 
 It prints the URL to open on the phone. Everything is addressed by the LAN IP rather than `localhost`,
 because the phone resolves these names itself.
+
+**If the phone times out**, run `just doctor`. In order of likelihood:
+
+1. **A host firewall.** `ufw` denies inbound by default, so nothing reaches ports 1313/8787/8790 no
+   matter how the servers are bound. `just firewall` opens them to your own subnet only;
+   `just firewall-off` closes them again.
+2. **The phone is on a different subnet** — a guest SSID, or wifi and wired LAN that the router keeps
+   apart. `just doctor` prints the address the phone has to be able to reach.
+3. **Client isolation** on the access point. Load `http://<LAN-ip>:8790/` in the phone's browser: a
+   "not found" page means the network path is fine and the problem is in the app; a timeout means it
+   never arrived.
 
 ### Against real Backblaze
 
