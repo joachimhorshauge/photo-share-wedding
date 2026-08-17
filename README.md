@@ -105,19 +105,26 @@ QR, so a guest photographing the table doesn't broadcast it.
 `ListObjectsV2`, and serving files back — so the whole loop runs on your laptop. It does not verify
 signatures; that is the one thing a mock can't usefully check.
 
-Three terminals:
-
 ```sh
-cd worker && npm run mock        # fake B2 on :8790, files land in worker/dev/.uploads/
-cd worker && npm run dev:mock    # Worker on :8787, pointed at the mock
-hugo server                      # site on :1313
+just dev        # mock B2 + Worker + site in one terminal, Ctrl-C stops all three
 ```
 
 Then open **<http://localhost:1313/?k=dev-key>** — the passcode comes from the URL, so `eventKey` in
 `hugo.toml` only matters for the printed QR. Send a few photos, then watch
 <http://localhost:1313/slideshow/?interval=4&refresh=10>.
 
-`rm -rf worker/dev/.uploads` empties the room again.
+Other recipes (`just` on its own lists them all):
+
+| | |
+|---|---|
+| `just status` | which of the three are up, and how many photos are in the pool |
+| `just smoke` | ticket → PUT → manifest → read back, without a browser |
+| `just clean` | empty the fake bucket, back to the holding card |
+| `just kill` | free the dev ports when something is left running |
+| `just check` | fail if the config placeholders would reach production |
+| `just mock` / `just worker` / `just site` | one piece at a time, own terminal |
+
+Ports: site `1313`, Worker `8787` (wrangler also takes `8788` for its inspector), mock B2 `8790`.
 
 ### From a real phone
 
@@ -125,13 +132,12 @@ The only way to shake out HEIC, EXIF rotation and the file-picker UX. Everything
 your LAN IP, not `localhost`, because the phone resolves these itself:
 
 ```sh
-cd worker && DEV_HOST=192.168.0.191 npm run dev:mock
-HUGO_PARAMS_APIBASE=http://192.168.0.191:8787 \
-  hugo server --bind 0.0.0.0 --baseURL http://192.168.0.191:1313/
+just phone              # detects your LAN address
+just phone 192.168.1.23 # or name it yourself
 ```
 
-Then open `http://192.168.0.191:1313/?k=dev-key` on the phone. (Substitute your own address —
-`ip -4 addr` or `ipconfig getifaddr en0`.)
+It prints the URL to open on the phone. Everything is addressed by the LAN IP rather than `localhost`,
+because the phone resolves these names itself.
 
 ### Against real Backblaze
 
@@ -182,7 +188,10 @@ projector during dinner.
 - **Open the slideshow before guests arrive** and press Fullscreen. It shows the QR and the couple's
   names until the first photo lands, so an empty screen still recruits uploads.
 - **Nothing appears on screen.** Open the browser console on the slideshow machine. A red
-  "Reconnecting…" badge means `/api/photos` is failing — check `npx wrangler tail` from `worker/`.
+  "Reconnecting…" badge means `/api/photos` is failing — check `just logs`.
+- **"My photo isn't showing up."** The manifest is cached for 30 seconds, so give it a minute first.
+  Then `curl '<worker>/api/photos?fresh=1'` — `?fresh=1` skips the cache in both directions and tells
+  a stale manifest apart from an upload that never landed.
 - **A guest says the upload failed.** Ask what the row said. `Scan the QR code again` = wrong/expired
   passcode. `Storage rejected it (403)` = B2 CORS or an expired key. Anything else is usually wifi;
   the Retry button is right there.

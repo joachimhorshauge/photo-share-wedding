@@ -119,22 +119,28 @@ async function handleUploadUrl(request, env, cors) {
 async function handlePhotos(request, env, ctx, cors) {
   // One shared 30s edge cache entry: a room full of reloaded slideshow tabs
   // still costs B2 two list calls a minute.
+  const url = new URL(request.url);
   const cache = caches.default;
-  const cacheKey = new Request(`${new URL(request.url).origin}/api/photos`, { method: 'GET' });
+  const cacheKey = new Request(`${url.origin}/api/photos`, { method: 'GET' });
 
-  const cached = await cache.match(cacheKey);
+  // ?fresh=1 skips the cache in both directions. The slideshow never asks for
+  // this; it exists so that when someone says "my photo isn't showing up" you
+  // can tell a stale manifest apart from a failed upload in one curl.
+  const bypass = url.searchParams.has('fresh');
+
+  const cached = bypass ? null : await cache.match(cacheKey);
   if (cached) return decorate(cached, cors, 'HIT');
 
   const payload = await listPhotos(env);
   const res = new Response(JSON.stringify(payload), {
     headers: {
       'content-type': 'application/json; charset=utf-8',
-      'cache-control': `public, max-age=${LIST_CACHE_SECONDS}`,
+      'cache-control': bypass ? 'no-store' : `public, max-age=${LIST_CACHE_SECONDS}`,
     },
   });
 
-  ctx.waitUntil(cache.put(cacheKey, res.clone()));
-  return decorate(res, cors, 'MISS');
+  if (!bypass) ctx.waitUntil(cache.put(cacheKey, res.clone()));
+  return decorate(res, cors, bypass ? 'BYPASS' : 'MISS');
 }
 
 async function listPhotos(env) {
