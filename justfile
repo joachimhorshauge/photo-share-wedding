@@ -11,6 +11,11 @@ ip := `ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ 
 # Local passcode, read from worker/.dev.vars so the two can never drift apart.
 key := `k=$(grep -E '^EVENT_KEY=' worker/.dev.vars 2>/dev/null | cut -d'"' -f2); echo "${k:-dev-key}"`
 
+# The path part of baseURL — a GitHub project site lives at /<repo>/, and
+# `hugo server` serves it there too. Typing localhost:1313/ gets you a 404,
+# which is a confusing five minutes, so every URL below carries this.
+base := `p=$(sed -n 's|^baseURL *= *"\(.*\)"|\1|p' hugo.toml | head -1 | sed -E 's|^https?://[^/]*||'); echo "/${p#/}" | sed 's|//*$|/|'`
+
 _default:
     @just --list --unsorted
 
@@ -20,13 +25,12 @@ _default:
 dev:
     #!/usr/bin/env bash
     set -uo pipefail
-    trap 'kill 0' EXIT INT TERM
-    echo "→ upload page   http://localhost:1313/?k={{key}}"
-    echo "→ slideshow     http://localhost:1313/slideshow/?interval=4&refresh=10"
-    echo
-    (cd worker && npm run --silent mock)     2>&1 | sed 's/^/[b2  ] /' &
-    (cd worker && npm run --silent dev:mock) 2>&1 | sed 's/^/[api ] /' &
-    hugo server                              2>&1 | sed 's/^/[site] /' &
+    source "$(just _runner)"
+    ensure_ports_free
+    start '[b2  ] ' 'cd worker && npm run --silent mock'
+    start '[api ] ' 'cd worker && npm run --silent dev:mock'
+    start '[site] ' 'hugo server'
+    just _wait-ready "http://localhost:1313{{base}}" &
     wait
 
 # Same, but reachable from a phone on the same wifi. Pass an address to override.
@@ -34,14 +38,34 @@ phone host=ip:
     #!/usr/bin/env bash
     set -uo pipefail
     if [ -z "{{host}}" ]; then echo "no LAN address found — pass one: just phone 192.168.1.23"; exit 1; fi
-    trap 'kill 0' EXIT INT TERM
-    echo "→ open on the phone:  http://{{host}}:1313/?k={{key}}"
-    echo
-    (cd worker && DEV_HOST={{host}} npm run --silent mock)     2>&1 | sed 's/^/[b2  ] /' &
-    (cd worker && DEV_HOST={{host}} npm run --silent dev:mock) 2>&1 | sed 's/^/[api ] /' &
-    HUGO_PARAMS_APIBASE=http://{{host}}:8787 \
-      hugo server --bind 0.0.0.0 --baseURL http://{{host}}:1313/ 2>&1 | sed 's/^/[site] /' &
+    source "$(just _runner)"
+    ensure_ports_free
+    start '[b2  ] ' 'cd worker && DEV_HOST={{host}} npm run --silent mock'
+    start '[api ] ' 'cd worker && DEV_HOST={{host}} npm run --silent dev:mock'
+    start '[site] ' 'HUGO_PARAMS_APIBASE=http://{{host}}:8787 hugo server --bind 0.0.0.0 --baseURL http://{{host}}:1313{{base}}'
+    just _wait-ready "http://{{host}}:1313{{base}}" &
     wait
+
+_runner:
+    @echo "{{justfile_directory()}}/dev/runner.sh"
+
+# Poll until everything answers, then print the URLs below the startup noise.
+_wait-ready site:
+    #!/usr/bin/env bash
+    for _ in $(seq 1 90); do
+      if curl -sf -m 1 -o /dev/null "http://127.0.0.1:1313{{base}}" \
+         && curl -sf -m 1 -o /dev/null http://127.0.0.1:8787/api/photos \
+         && curl -sf -m 1 -o /dev/null 'http://127.0.0.1:8790/dev-bucket?list-type=2'; then
+        printf '\n  ───────────────────────────────────────────────────────────\n'
+        printf '   upload:     %s?k=%s\n' '{{site}}' '{{key}}'
+        printf '   slideshow:  %sslideshow/?interval=4&refresh=10\n' '{{site}}'
+        printf '   cards:      %sprint/\n' '{{site}}'
+        printf '  ───────────────────────────────────────────────────────────\n\n'
+        exit 0
+      fi
+      sleep 1
+    done
+    echo "  (services did not all come up within 90s — try 'just status')" >&2
 
 # Individual pieces, when you want one in its own terminal.
 mock:
@@ -62,16 +86,20 @@ worker-real:
 # Is each piece up, and does the round trip actually work?
 status:
     #!/usr/bin/env bash
+    # Only 200 counts. An earlier version accepted 404 as "up", which cheerfully
+    # reported a healthy site while every page was a 404.
     probe() {
       code=$(curl -s -m 2 -o /dev/null -w '%{http_code}' "$2" 2>/dev/null || true)
-      if [ "$code" = "200" ] || [ "$code" = "404" ]; then
+      if [ "$code" = "200" ]; then
         printf '  %-12s \033[32mup\033[0m    %s\n' "$1" "$2"
-      else
+      elif [ "$code" = "000" ] || [ -z "$code" ]; then
         printf '  %-12s \033[31mdown\033[0m  %s  (run: just %s)\n' "$1" "$2" "$3"
+      else
+        printf '  %-12s \033[33mHTTP %s\033[0m  %s\n' "$1" "$code" "$2"
       fi
     }
     echo "services:"
-    probe site   http://127.0.0.1:1313/           site
+    probe site   "http://127.0.0.1:1313{{base}}"  site
     probe worker http://127.0.0.1:8787/api/photos worker
     probe mockb2 'http://127.0.0.1:8790/dev-bucket?list-type=2' mock
     echo
@@ -79,6 +107,7 @@ status:
         | node -pe 'try{String(JSON.parse(require("fs").readFileSync(0,"utf8")).count)}catch(e){"?"}' 2>/dev/null || echo '?')
     echo "photos in the pool: $n"
     echo "passcode:           {{key}}"
+    echo "upload page:        http://localhost:1313{{base}}?k={{key}}"
 
 # Prove the upload path end to end: ticket → PUT → manifest → fetch back.
 smoke:
@@ -116,18 +145,27 @@ clean:
     rm -rf worker/dev/.uploads/*
     @echo "fake bucket emptied"
 
-# Kill anything left listening on the dev ports.
+# Kill anything left listening on the dev ports, plus any strays.
 kill:
     #!/usr/bin/env bash
     for port in 1313 8787 8788 8790; do
-      pid=$(ss -tlnp 2>/dev/null | grep ":$port " | grep -oP 'pid=\K[0-9]+' | head -1)
-      [ -n "$pid" ] && { kill "$pid" 2>/dev/null && echo "  killed $pid on :$port"; }
+      for pid in $(ss -tlnp 2>/dev/null | grep ":$port " | grep -oP 'pid=\K[0-9]+' | sort -u); do
+        kill "$pid" 2>/dev/null && echo "  killed $pid on :$port"
+      done
     done
-    echo "done"
+    # Supervisor first: wrangler's node process respawns workerd the moment you
+    # kill it, so the obvious order leaves you with a port you can't reclaim and
+    # a growing pile of workerds. The brackets stop the pattern from matching
+    # this recipe's own command line.
+    for pat in 'wrangler-dist/cli\.js de[v]' 'hugo serve[r]' 'worker[d] serve' 'mock-b[2].mjs'; do
+      pkill -f "$pat" 2>/dev/null && { echo "  swept ${pat//[\[\]\\]/}"; sleep 0.5; }
+    done
+    sleep 1
+    ss -tln 2>/dev/null | grep -qE ':(1313|8787|8790) ' && echo "  something is STILL holding a port" || echo "  ports clear"
 
 # Open the upload page with the passcode already attached.
 open:
-    xdg-open "http://localhost:1313/?k={{key}}" >/dev/null 2>&1 &
+    xdg-open "http://localhost:1313{{base}}?k={{key}}" >/dev/null 2>&1 &
 
 build:
     hugo --minify

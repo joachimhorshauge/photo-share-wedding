@@ -109,9 +109,16 @@ signatures; that is the one thing a mock can't usefully check.
 just dev        # mock B2 + Worker + site in one terminal, Ctrl-C stops all three
 ```
 
-Then open **<http://localhost:1313/?k=dev-key>** — the passcode comes from the URL, so `eventKey` in
-`hugo.toml` only matters for the printed QR. Send a few photos, then watch
-<http://localhost:1313/slideshow/?interval=4&refresh=10>.
+It prints the URLs once all three answer. Note the path: `baseURL` in `hugo.toml` ends in
+`/photo-share-wedding/`, and `hugo server` honours that, so plain `http://localhost:1313/` is a **404**.
+The real page is:
+
+```
+http://localhost:1313/photo-share-wedding/?k=dev-key
+```
+
+The passcode comes from the URL, so `eventKey` in `hugo.toml` only matters for the printed QR. Send a
+few photos, then watch `…/photo-share-wedding/slideshow/?interval=4&refresh=10`.
 
 Other recipes (`just` on its own lists them all):
 
