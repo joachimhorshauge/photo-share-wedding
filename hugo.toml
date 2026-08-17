@@ -13,7 +13,8 @@ disableKinds = ["taxonomy", "term", "rss"]
 [params]
   # ---- the two things you must set ----------------------------------------
   # Deployed Cloudflare Worker (no trailing slash). See worker/README notes.
-  apiBase = "https://photo-share-wedding.WORKER_SUBDOMAIN.workers.dev"
+  # apiBase = "https://photo-share-wedding.WORKER_SUBDOMAIN.workers.dev"
+  apiBase = "http://127.0.0.1:8787"
   # Shared event passcode. Must match the EVENT_KEY secret on the Worker.
   # This is friction, not a secret: it rides in the QR link and anyone who
   # scans the code has it. Its job is to keep crawlers out and to let you kill

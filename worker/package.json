@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "tail": "wrangler tail"
+    "tail": "wrangler tail",
+    "mock": "node dev/mock-b2.mjs",
+    "dev:mock": "wrangler dev --ip 0.0.0.0 --var B2_BUCKET:dev-bucket --var B2_ENDPOINT:http://${DEV_HOST:-127.0.0.1}:8790 --var B2_PUBLIC_BASE:http://${DEV_HOST:-127.0.0.1}:8790/file/dev-bucket --var ALLOWED_ORIGINS:*"
   },
   "dependencies": {
     "aws4fetch": "^1.0.20"

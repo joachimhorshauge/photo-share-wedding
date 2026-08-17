@@ -99,22 +99,44 @@ QR, so a guest photographing the table doesn't broadcast it.
 
 ## Local development
 
-```sh
-hugo server                                  # site on :1313
-cd worker && npx wrangler dev                # API on :8787, needs worker/.dev.vars
-```
+### Without a Backblaze account
 
-Copy `worker/.dev.vars.example` to `worker/.dev.vars` and point `apiBase` in `hugo.toml` at
-`http://127.0.0.1:8787` while you work.
+`worker/dev/mock-b2.mjs` impersonates the bits of the B2 S3 API this project uses — presigned PUTs,
+`ListObjectsV2`, and serving files back — so the whole loop runs on your laptop. It does not verify
+signatures; that is the one thing a mock can't usefully check.
 
-Testing from a real phone on the same wifi — the only way to shake out HEIC, EXIF rotation and the
-file-picker UX:
+Three terminals:
 
 ```sh
-hugo server --bind 0.0.0.0 --baseURL http://<your-LAN-ip>:1313
+cd worker && npm run mock        # fake B2 on :8790, files land in worker/dev/.uploads/
+cd worker && npm run dev:mock    # Worker on :8787, pointed at the mock
+hugo server                      # site on :1313
 ```
 
-Then open `http://<your-LAN-ip>:1313/?k=<your passcode>` on the phone.
+Then open **<http://localhost:1313/?k=dev-key>** — the passcode comes from the URL, so `eventKey` in
+`hugo.toml` only matters for the printed QR. Send a few photos, then watch
+<http://localhost:1313/slideshow/?interval=4&refresh=10>.
+
+`rm -rf worker/dev/.uploads` empties the room again.
+
+### From a real phone
+
+The only way to shake out HEIC, EXIF rotation and the file-picker UX. Everything must be addressed by
+your LAN IP, not `localhost`, because the phone resolves these itself:
+
+```sh
+cd worker && DEV_HOST=192.168.0.191 npm run dev:mock
+HUGO_PARAMS_APIBASE=http://192.168.0.191:8787 \
+  hugo server --bind 0.0.0.0 --baseURL http://192.168.0.191:1313/
+```
+
+Then open `http://192.168.0.191:1313/?k=dev-key` on the phone. (Substitute your own address —
+`ip -4 addr` or `ipconfig getifaddr en0`.)
+
+### Against real Backblaze
+
+Copy `worker/.dev.vars.example` to `worker/.dev.vars`, fill in a real key pair, and run `npm run dev`
+instead of `npm run dev:mock`. `http://localhost:1313` has to be in the bucket's CORS rules.
 
 Useful probes:
 
