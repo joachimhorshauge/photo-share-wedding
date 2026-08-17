@@ -1,0 +1,11 @@
+/public/
+/resources/_gen/
+/.hugo_build.lock
+
+# Worker
+worker/node_modules/
+worker/.wrangler/
+worker/.dev.vars
+
+node_modules/
+.DS_Store

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="{{ site.Language.LanguageCode }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} · {{ site.Title }}{{ end }}</title>
+  <meta name="theme-color" content="#141210">
+  {{ if .Params.private }}<meta name="robots" content="noindex, nofollow">{{ end }}
+  {{ with .Params.description | default site.Params.tagline }}<meta name="description" content="{{ . }}">{{ end }}
+
+  {{ $css := resources.Get "css/main.css" | minify | fingerprint }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}">
+
+  {{/* Runtime config for the JS. Note what is NOT here: the event passcode.
+       That only ever travels in the QR link, so the site itself never leaks it. */}}
+  <script type="application/json" id="wps-config">
+    {{- dict
+      "apiBase" (site.Params.apiBase | default "" )
+      "slideSeconds" (site.Params.slideSeconds | default 7)
+      "refreshSeconds" (site.Params.refreshSeconds | default 60)
+      "maxUploadMB" (site.Params.maxUploadMB | default 12)
+      "maxEdge" (site.Params.maxEdge | default 2560)
+      "coupleNames" (site.Params.coupleNames | default "")
+      | jsonify | safeJS -}}
+  </script>
+</head>
+<body class="{{ block "bodyclass" . }}{{ end }}">
+  {{ block "chrome" . }}
+    <nav class="tabs" aria-label="Sections">
+      <a class="tab{{ if .IsHome }} is-active{{ end }}" href="{{ "" | relURL }}">Share a photo</a>
+      <a class="tab{{ if eq .RelPermalink (relURL "slideshow/") }} is-active{{ end }}" href="{{ "slideshow/" | relURL }}">Slideshow</a>
+    </nav>
+  {{ end }}
+
+  {{ block "main" . }}{{ end }}
+
+  {{ block "scripts" . }}{{ end }}
+</body>
+</html>

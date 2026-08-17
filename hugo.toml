@@ -1,0 +1,41 @@
+# Local/default baseURL. The GitHub Actions build overrides this with the real
+# Pages URL (see .github/workflows/hugo.yml), so you only need to change this if
+# you serve the site from somewhere else.
+baseURL = "https://GITHUB_USER.github.io/photo-share-wedding/"
+languageCode = "en-us"
+title = "Our Wedding Photos"
+enableRobotsTXT = true
+
+# Guests never look at these, and a half-finished slideshow in a search index
+# helps nobody.
+disableKinds = ["taxonomy", "term", "rss"]
+
+[params]
+  # ---- the two things you must set ----------------------------------------
+  # Deployed Cloudflare Worker (no trailing slash). See worker/README notes.
+  apiBase = "https://photo-share-wedding.WORKER_SUBDOMAIN.workers.dev"
+  # Shared event passcode. Must match the EVENT_KEY secret on the Worker.
+  # This is friction, not a secret: it rides in the QR link and anyone who
+  # scans the code has it. Its job is to keep crawlers out and to let you kill
+  # uploads after the party by rotating it on the Worker.
+  eventKey = "CHANGE-ME"
+
+  # ---- wording -------------------------------------------------------------
+  coupleNames = "Alex & Sam"
+  eventDate = "2026-08-17"
+  tagline = "Help us see the day through your eyes."
+
+  # ---- behaviour -----------------------------------------------------------
+  slideSeconds = 7      # how long each photo stays on screen
+  refreshSeconds = 60   # how often the slideshow re-reads the photo pool
+  maxUploadMB = 12      # rejected client-side before anything is sent
+  maxEdge = 2560        # photos are downscaled to this on the long side
+
+[markup.goldmark.renderer]
+  unsafe = true
+
+[build]
+  writeStats = false
+
+[minify]
+  disableJS = true  # our JS is already bundled+minified by js.Build

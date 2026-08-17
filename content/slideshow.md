@@ -1,0 +1,4 @@
+---
+title: "Slideshow"
+layout: slideshow
+---

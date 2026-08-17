@@ -1,0 +1,11 @@
+{{- /*
+  Renders a build-time QR code pointing at the upload page, passcode included.
+  Usage: {{ partial "qr.html" (dict "scale" 8 "class" "qr") }}
+*/ -}}
+{{- $key := site.Params.eventKey | default "" -}}
+{{- $url := cond (eq $key "") (absURL "") (printf "%s?k=%s" (absURL "") (urlquery $key)) -}}
+{{- $qr := images.QR $url (dict "level" "medium" "scale" (.scale | default 6)) -}}
+<img class="{{ .class | default "qr" }}"
+     src="{{ $qr.RelPermalink }}"
+     width="{{ $qr.Width }}" height="{{ $qr.Height }}"
+     alt="QR code linking to the photo upload page">

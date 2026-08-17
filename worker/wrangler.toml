@@ -1,0 +1,30 @@
+name = "photo-share-wedding"
+main = "src/index.js"
+compatibility_date = "2025-11-01"
+
+[vars]
+# Everything here is public — it ships in the Worker bundle. Keys go in secrets.
+B2_BUCKET = "wedding-photos-example"
+B2_REGION = "us-west-004"
+B2_ENDPOINT = "https://s3.us-west-004.backblazeb2.com"
+B2_PUBLIC_BASE = "https://f004.backblazeb2.com/file/wedding-photos-example"
+
+# Comma-separated. Must include the deployed Pages origin, and localhost while
+# you develop. An origin missing here is the usual cause of a silent upload
+# failure in the browser console.
+ALLOWED_ORIGINS = "https://GITHUB_USER.github.io,http://localhost:1313"
+
+PREFIX = "photos/"
+
+# Secrets — set these with `npx wrangler secret put <NAME>`, never here:
+#   B2_KEY_ID    application key id, scoped to the bucket
+#   B2_APP_KEY   application key
+#   EVENT_KEY    the passcode that rides in the QR link
+
+# Optional: per-IP upload throttle. Create with
+#   npx wrangler kv namespace create RL
+# then paste the id below and uncomment. Without it the Worker still runs, it
+# just doesn't throttle.
+# [[kv_namespaces]]
+# binding = "RL"
+# id = "PASTE_ID_HERE"

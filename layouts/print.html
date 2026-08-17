@@ -1,0 +1,27 @@
+{{ define "bodyclass" }}page-print{{ end }}
+
+{{ define "chrome" }}{{ end }}
+
+{{ define "main" }}
+<main class="sheet">
+  {{/* Two identical cards per A4 sheet: cut along the middle, fold, table tent. */}}
+  {{ range seq 2 }}
+  <section class="card-print">
+    <p class="eyebrow">{{ site.Params.coupleNames }}</p>
+    <h1>Share your photos</h1>
+    {{ partial "qr.html" (dict "scale" 8 "class" "qr qr-print") }}
+    <ol class="steps">
+      <li>Point your camera at the code.</li>
+      <li>Open the link it offers.</li>
+      <li>Pick your photos — they appear on the big screen within a minute.</li>
+    </ol>
+    <p class="card-foot">{{ dateFormat "2 January 2006" (site.Params.eventDate | default now) }}</p>
+  </section>
+  {{ end }}
+
+  <p class="print-note no-print">
+    Press ⌘/Ctrl&nbsp;+&nbsp;P. Two cards per sheet, sized to fold in half.
+    The passcode is inside the QR code, so nothing on the card gives it away in a photo of the table.
+  </p>
+</main>
+{{ end }}
