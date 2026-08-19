@@ -1,7 +1,7 @@
 # Local/default baseURL. The GitHub Actions build overrides this with the real
 # Pages URL (see .github/workflows/hugo.yml), so you only need to change this if
 # you serve the site from somewhere else.
-baseURL = "https://GITHUB_USER.github.io/photo-share-wedding/"
+baseURL = "https://joachimhorshauge.github.io/photo-share-wedding/"
 languageCode = "en-us"
 title = "Our Wedding Photos"
 enableRobotsTXT = true
