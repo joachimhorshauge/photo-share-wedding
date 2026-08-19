@@ -1,4 +1,4 @@
 ---
-title: "Del et billede"
+title: "Del dine billeder"
 layout: home
 ---
