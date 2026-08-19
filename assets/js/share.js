@@ -69,7 +69,7 @@ function addFiles(fileList) {
   Array.from(fileList).forEach((file) => {
     const item = createItem(file);
     if (file.size > maxBytes) {
-      item.fail(`Too big (${mb(file.size)} MB) — max ${config.maxUploadMB} MB`, false);
+      item.fail(`For stor (${mb(file.size)} MB) — maks. ${config.maxUploadMB} MB`, false);
       return;
     }
     pending.push(item);
@@ -109,15 +109,15 @@ async function run(item) {
 }
 
 async function upload(item) {
-  item.setState('Preparing…');
+  item.setState('Forbereder…');
   item.setProgress(0);
 
   const prepared = item.prepared || (await prepare(item.file));
   item.prepared = prepared;
   item.setThumb(prepared.blob);
-  if (prepared.raw) item.note('sent as-is');
+  if (prepared.raw) item.note('sendt som den er');
 
-  item.setState('Sending…');
+  item.setState('Sender…');
   const ticket = await requestTicket(prepared);
   await put(ticket.uploadUrl, prepared.blob, prepared.contentType, (p) => item.setProgress(p));
 
@@ -134,12 +134,12 @@ async function requestTicket(prepared) {
       body: JSON.stringify({ contentType: prepared.contentType, size: prepared.blob.size }),
     });
   } catch (e) {
-    throw retryable(new Error('No connection'));
+    throw retryable(new Error('Ingen forbindelse'));
   }
 
-  if (res.status === 403) throw new Error('Scan the QR code again');
-  if (res.status === 429) throw retryable(new Error('Slow down a moment'));
-  if (!res.ok) throw retryable(new Error(`Upload service error (${res.status})`));
+  if (res.status === 403) throw new Error('Scan QR-koden igen');
+  if (res.status === 429) throw retryable(new Error('Vent et øjeblik'));
+  if (!res.ok) throw retryable(new Error(`Fejl i uploadtjenesten (${res.status})`));
 
   return res.json();
 }
@@ -174,7 +174,7 @@ async function prepare(file) {
     // Desktop Chrome/Firefox can't decode HEIC. Send the original and let the
     // guest know it may not make the screen.
     const type = ALLOWED_TYPES.includes(file.type) ? file.type : 'image/jpeg';
-    if (file.size > maxBytes) throw new Error(`Too big (${mb(file.size)} MB)`);
+    if (file.size > maxBytes) throw new Error(`For stor (${mb(file.size)} MB)`);
     return { blob: file, contentType: type, raw: true };
   }
 }
@@ -206,10 +206,10 @@ function put(url, blob, contentType, onProgress) {
     };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve();
-      else reject(retryable(new Error(`Storage rejected it (${xhr.status})`)));
+      else reject(retryable(new Error(`Lageret afviste den (${xhr.status})`)));
     };
-    xhr.onerror = () => reject(retryable(new Error('Connection dropped')));
-    xhr.ontimeout = () => reject(retryable(new Error('Timed out')));
+    xhr.onerror = () => reject(retryable(new Error('Forbindelsen blev afbrudt')));
+    xhr.ontimeout = () => reject(retryable(new Error('Tiden løb ud')));
     xhr.timeout = 120000;
     xhr.send(blob);
   });
@@ -226,9 +226,9 @@ function createItem(file) {
       <div class="item-name"></div>
       <div class="item-bar"><span></span></div>
     </div>
-    <div class="item-state">Queued</div>`;
+    <div class="item-state">I kø</div>`;
 
-  li.querySelector('.item-name').textContent = file.name || 'photo';
+  li.querySelector('.item-name').textContent = file.name || 'billede';
   el.queue.prepend(li);
 
   const bar = li.querySelector('.item-bar span');
@@ -245,7 +245,7 @@ function createItem(file) {
     done: () => {
       li.classList.remove('is-error');
       li.classList.add('is-done');
-      state.textContent = 'Shared ✓';
+      state.textContent = 'Delt ✓';
       bar.style.width = '100%';
     },
     fail: (text, canRetry) => {
@@ -255,7 +255,7 @@ function createItem(file) {
       const btn = document.createElement('button');
       btn.className = 'retry';
       btn.type = 'button';
-      btn.textContent = 'Retry';
+      btn.textContent = 'Prøv igen';
       btn.addEventListener('click', () => {
         btn.remove();
         li.classList.remove('is-error');
@@ -279,13 +279,13 @@ function renderTally() {
   const n = Number(read(COUNT_STORAGE) || 0);
   if (!n) return;
   el.tally.hidden = false;
-  el.tally.textContent = n === 1 ? 'You’ve shared 1 photo. Thank you.' : `You’ve shared ${n} photos. Thank you.`;
+  el.tally.textContent = n === 1 ? 'Du har delt 1 billede. Tak.' : `Du har delt ${n} billeder. Tak.`;
 }
 
 /* -- small helpers -------------------------------------------------------- */
 
 function retryable(err) { err.retryable = true; return err; }
-function message(err) { return (err && err.message) || 'Something went wrong'; }
+function message(err) { return (err && err.message) || 'Noget gik galt'; }
 function mb(bytes) { return (bytes / 1024 / 1024).toFixed(1); }
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }

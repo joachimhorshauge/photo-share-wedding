@@ -12,21 +12,21 @@
   <img class="qr-asset"
        src="{{ $qr.RelPermalink }}"
        width="{{ $qr.Width }}" height="{{ $qr.Height }}"
-       alt="QR code linking to the photo upload page">
+       alt="QR-kode med link til siden, hvor du deler billeder">
 
   {{/* Everything below is for whoever is building the artwork, and never
        prints — a sheet with this on it should be the code and nothing else. */}}
   <aside class="qr-meta no-print">
     <p>
       <a class="qr-download" href="{{ $qr.RelPermalink }}" download="wedding-qr.png">
-        Download PNG — {{ $qr.Width }}&times;{{ $qr.Height }}
+        Hent PNG — {{ $qr.Width }}&times;{{ $qr.Height }}
       </a>
     </p>
-    <p class="qr-target">Encodes: <code>{{ absURL "" }}?k={{ site.Params.eventKey }}</code></p>
+    <p class="qr-target">Indeholder: <code>{{ absURL "" }}?k={{ site.Params.eventKey }}</code></p>
     <p class="qr-hint">
-      Black on opaque white. Composite it with a multiply blend if you need it on
-      a coloured background, and keep a quiet margin the width of four modules
-      around it or scanners will struggle.
+      Sort på uigennemsigtig hvid. Brug multiply-blanding, hvis den skal ligge på
+      en farvet baggrund, og hold en rolig margen på fire moduler hele vejen
+      rundt — ellers får scannere svært ved den.
     </p>
   </aside>
 </main>

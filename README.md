@@ -213,14 +213,14 @@ projector during dinner.
 - **Open the slideshow before guests arrive** and press Fullscreen. It shows the QR and the couple's
   names until the first photo lands, so an empty screen still recruits uploads.
 - **Nothing appears on screen.** Open the browser console on the slideshow machine. A red
-  "Reconnecting…" badge means `/api/photos` is failing — check `just logs`. A "Locked" badge means
-  that machine has no passcode: open `/?k=...` on it once, then go back to the slideshow.
+  "Genopretter forbindelse…" badge means `/api/photos` is failing — check `just logs`. A "Låst"
+  badge means that machine has no passcode: open `/?k=...` on it once, then go back to the slideshow.
 - **"My photo isn't showing up."** The manifest is cached for 30 seconds, so give it a minute first.
   Then `curl '<worker>/api/photos?fresh=1&k=<passcode>'` — `?fresh=1` skips the cache in both
   directions and tells a stale manifest apart from an upload that never landed.
-- **A guest says the upload failed.** Ask what the row said. `Scan the QR code again` = wrong/expired
-  passcode. `Storage rejected it (403)` = B2 CORS or an expired key. Anything else is usually wifi;
-  the Retry button is right there.
+- **A guest says the upload failed.** Ask what the row said. The UI is in Danish: `Scan QR-koden igen`
+  = wrong/expired passcode. `Lageret afviste den (403)` = B2 CORS or an expired key.
+  `Forbindelsen blev afbrudt` is usually wifi — the `Prøv igen` button is right there.
 - **Someone uploads something unwelcome.** Delete the object in the B2 web console. It disappears from
   the slideshow within a refresh cycle, and the slideshow skips it immediately if it's already queued.
 - **Turn uploads off after the party:** `npx wrangler secret put EVENT_KEY` with a new value. Every

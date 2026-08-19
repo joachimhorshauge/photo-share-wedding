@@ -15,7 +15,7 @@ const key = eventKey();
 // Scanning the QR on screen is no help here — that unlocks whichever phone did
 // the scanning, not this machine — so the message names the one fix that works
 // on the projector itself.
-const LOCKED_MESSAGE = `This screen needs the passcode. Reopen it as ${location.pathname}?k=YOUR-PASSCODE`;
+const LOCKED_MESSAGE = `Denne skærm mangler adgangskoden. Åbn den som ${location.pathname}?k=JERES-KODE`;
 
 const el = {
   slides: [document.getElementById('slide-0'), document.getElementById('slide-1')],
@@ -72,7 +72,7 @@ async function refresh() {
   } catch (e) {
     // Keep playing whatever we already have. A projector going blank because a
     // fetch failed is far worse than a slightly stale pool.
-    showError('Reconnecting…');
+    showError('Genopretter forbindelse…');
     return;
   }
 
@@ -138,7 +138,7 @@ async function advance() {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const key = nextKey();
     if (!key) {
-      showHolding(pool.size === 0 ? 'Waiting for the first photo…' : 'Loading…');
+      showHolding(pool.size === 0 ? 'Venter på det første billede…' : 'Indlæser…');
       timer = setTimeout(advance, 5000);
       return;
     }
@@ -199,7 +199,7 @@ function showHolding(text) {
 
 function lock() {
   locked = true;
-  showError('Locked');
+  showError('Låst');
   // Only take over the screen when there's nothing playing. A passcode rotated
   // while the party is still going shouldn't wipe a running slideshow — the
   // pool it already has keeps cycling behind the HUD badge.
@@ -212,8 +212,8 @@ function hideHolding() {
 
 function renderCount() {
   const n = pool.size;
-  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  el.hudCount.textContent = `${n} ${n === 1 ? 'photo' : 'photos'} · updated ${time}`;
+  const time = new Date().toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
+  el.hudCount.textContent = `${n} ${n === 1 ? 'billede' : 'billeder'} · opdateret ${time}`;
 }
 
 function showError(text) {

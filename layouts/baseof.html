@@ -26,8 +26,8 @@
 </head>
 <body class="{{ block "bodyclass" . }}{{ end }}">
   {{ block "chrome" . }}
-    <nav class="tabs" aria-label="Sections">
-      <a class="tab{{ if .IsHome }} is-active{{ end }}" href="{{ "" | relURL }}">Share a photo</a>
+    <nav class="tabs" aria-label="Sektioner">
+      <a class="tab{{ if .IsHome }} is-active{{ end }}" href="{{ "" | relURL }}">Del et billede</a>
       <a class="tab{{ if eq .RelPermalink (relURL "slideshow/") }} is-active{{ end }}" href="{{ "slideshow/" | relURL }}">Slideshow</a>
     </nav>
   {{ end }}

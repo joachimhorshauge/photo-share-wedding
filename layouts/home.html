@@ -4,23 +4,24 @@
 <main class="wrap">
   <header class="masthead">
     <p class="eyebrow">{{ site.Params.coupleNames }}</p>
-    <h1>Share a photo</h1>
+    <h1>Del et billede</h1>
     <p class="lede">{{ site.Params.tagline }}</p>
   </header>
 
   {{/* Shown when there is no event key: someone found the site without the QR. */}}
   <section class="card gate" id="gate" hidden>
-    <h2>Scan the code on your table</h2>
-    <p>This page needs the link from the QR code before it can send photos. Point your camera at any of the cards around the room and open the link it offers.</p>
+    <h2>Scan koden på jeres bord</h2>
+    <p>Denne side skal bruge linket fra QR-koden, før den kan sende billeder. Ret kameraet mod et af kortene i lokalet, og åbn det link, den tilbyder.</p>
   </section>
 
   <section class="uploader" id="uploader" hidden>
     <div class="dropzone" id="dropzone">
       <input type="file" id="file-input" accept="image/*" multiple hidden>
-      <button class="btn btn-primary" id="pick-btn" type="button">Choose photos</button>
+      <button class="btn btn-primary" id="pick-btn" type="button">Vælg billeder</button>
       <p class="hint">
-        Up to <span id="max-mb">12</span>&nbsp;MB each. Photos are resized on your
-        phone before sending, so this works even on tired wedding&nbsp;wifi.
+        Op til <span id="max-mb">12</span>&nbsp;MB pr. billede. Billederne bliver
+        skaleret ned på din telefon, før de sendes, så det virker selv på et
+        trængt bryllups-wifi.
       </p>
     </div>
 
@@ -28,8 +29,8 @@
     <ul class="queue" id="queue"></ul>
 
     <p class="footnote">
-      Everything you send appears on the <a href="{{ "slideshow/" | relURL }}">slideshow</a>
-      within a minute or so.
+      Alt hvad du sender, dukker op på <a href="{{ "slideshow/" | relURL }}">slideshowet</a>
+      i løbet af et minuts tid.
     </p>
   </section>
 </main>

@@ -23,15 +23,15 @@
   {{/* Shown until the first photo lands, and any time the pool empties out. */}}
   <div class="holding" id="holding">
     <p class="eyebrow">{{ site.Params.coupleNames }}</p>
-    <h1>Scan to share your photos</h1>
+    <h1>Scan og del jeres billeder</h1>
     {{ partial "qr.html" (dict "scale" 8 "class" "qr qr-holding") }}
-    <p class="holding-status" id="holding-status">Waiting for the first photo…</p>
+    <p class="holding-status" id="holding-status">Venter på det første billede…</p>
   </div>
 
   <div class="hud" id="hud">
     <span class="hud-count" id="hud-count"></span>
-    <button class="hud-btn" id="fullscreen-btn" type="button">Fullscreen</button>
-    <a class="hud-btn" href="{{ "" | relURL }}">Upload page</a>
+    <button class="hud-btn" id="fullscreen-btn" type="button">Fuld skærm</button>
+    <a class="hud-btn" href="{{ "" | relURL }}">Delside</a>
   </div>
 
   <div class="hud-error" id="hud-error" hidden></div>

@@ -1,4 +1,4 @@
 ---
-title: "Share a photo"
+title: "Del et billede"
 layout: home
 ---

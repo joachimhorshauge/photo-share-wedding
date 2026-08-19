@@ -2,8 +2,8 @@
 # Pages URL (see .github/workflows/hugo.yml), so you only need to change this if
 # you serve the site from somewhere else.
 baseURL = "https://joachimhorshauge.github.io/photo-share-wedding/"
-languageCode = "en-us"
-title = "Our Wedding Photos"
+languageCode = "da-DK"
+title = "Vores bryllupsbilleder"
 enableRobotsTXT = true
 
 # Guests never look at these, and a half-finished slideshow in a search index
@@ -23,7 +23,7 @@ disableKinds = ["taxonomy", "term", "rss"]
   # ---- wording -------------------------------------------------------------
   coupleNames = "Joachim & Sarah"
   eventDate = "2026-08-22"
-  tagline = "Help us see the day through your eyes."
+  tagline = "Hjælp os med at se dagen gennem dine øjne."
 
   # ---- behaviour -----------------------------------------------------------
   slideSeconds = 7      # how long each photo stays on screen
