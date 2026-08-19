@@ -1,4 +1,5 @@
 import { config, api, num } from './config.js';
+import { eventKey } from './event-key.js';
 
 const params = new URLSearchParams(location.search);
 const slideMs = num(params.get('interval'), config.slideSeconds || 7) * 1000;
@@ -7,6 +8,14 @@ const refreshMs = num(params.get('refresh'), config.refreshSeconds || 60) * 1000
 // A burst of uploads shouldn't hijack the screen for ten minutes; the overflow
 // still gets shown, just via the normal shuffle.
 const MAX_PRIORITY = 12;
+
+const key = eventKey();
+
+// Shown instead of "Waiting for the first photo…" when the manifest is refused.
+// Scanning the QR on screen is no help here — that unlocks whichever phone did
+// the scanning, not this machine — so the message names the one fix that works
+// on the projector itself.
+const LOCKED_MESSAGE = `This screen needs the passcode. Reopen it as ${location.pathname}?k=YOUR-PASSCODE`;
 
 const el = {
   slides: [document.getElementById('slide-0'), document.getElementById('slide-1')],
@@ -26,6 +35,7 @@ let slot = 0;                // which of the two <img> layers is on screen
 let currentKey = null;
 let timer = null;
 let started = false;
+let locked = false;          // the Worker refused the manifest
 
 start();
 
@@ -43,11 +53,21 @@ async function start() {
 /* -- the pool ------------------------------------------------------------- */
 
 async function refresh() {
+  // Without a key the answer is a certain 403, so don't bother asking.
+  if (!key) return lock();
+
   let photos;
   try {
-    const res = await fetch(api('/api/photos'), { cache: 'no-store' });
+    const res = await fetch(api('/api/photos'), {
+      cache: 'no-store',
+      headers: { 'X-Event-Key': key },
+    });
+    // A stale key won't fix itself on the next tick — say so rather than
+    // sitting behind "Reconnecting…" for the rest of the evening.
+    if (res.status === 403) return lock();
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     photos = (await res.json()).photos;
+    locked = false;
     hideError();
   } catch (e) {
     // Keep playing whatever we already have. A projector going blank because a
@@ -171,7 +191,19 @@ function preload(url) {
 
 function showHolding(text) {
   el.holding.hidden = false;
-  el.holdingStatus.textContent = text;
+  // Being locked outranks whatever playback was about to say, and playback
+  // retries every few seconds, so the check belongs here rather than at each
+  // call site.
+  el.holdingStatus.textContent = locked ? LOCKED_MESSAGE : text;
+}
+
+function lock() {
+  locked = true;
+  showError('Locked');
+  // Only take over the screen when there's nothing playing. A passcode rotated
+  // while the party is still going shouldn't wipe a running slideshow — the
+  // pool it already has keeps cycling behind the HUD badge.
+  if (!currentKey) showHolding('');
 }
 
 function hideHolding() {

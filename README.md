@@ -22,7 +22,7 @@ phone ──scan QR──▶ Pages  /?k=KEY
 phone ──PUT jpeg─────┴─────────────▶ B2 bucket     (direct)
 
 TV ──▶ /slideshow/ ──GET /api/photos every 60s──▶ Worker ──ListObjectsV2──▶ B2
-                                                      (30s edge cache)
+            (X-Event-Key)                             (30s edge cache)
 ```
 
 ## About the passcode
@@ -31,9 +31,14 @@ The event key rides inside the QR link (`/?k=...`). Anyone who scans a card has 
 **friction, not a secret**. What it actually buys you:
 
 - crawlers and randoms who find the site can't upload,
-- after the wedding, rotating one Worker secret shuts uploads off everywhere at once.
+- nor read the photo list, so the Worker URL alone doesn't hand anyone the album,
+- after the wedding, rotating one Worker secret shuts everything off at once.
 
-The site itself never embeds the key — only the printable card's QR does.
+The site itself never embeds the key — only the printable card's QR does. The slideshow needs it too:
+open the QR link once on the projector machine and it keeps the key in that browser's local storage.
+
+The photos themselves sit in a public bucket, so a leaked *photo* URL stays readable regardless. The
+passcode gates the index, not the images.
 
 ---
 
@@ -168,7 +173,8 @@ Useful probes:
 ```sh
 curl -X POST localhost:8787/api/upload-url -H 'content-type: application/json' \
   -H 'X-Event-Key: wrong' -d '{"contentType":"image/jpeg","size":1000}'      # → 403
-curl localhost:8787/api/photos                                               # → the manifest
+curl 'localhost:8787/api/photos'                                             # → 403
+curl 'localhost:8787/api/photos?k=<key>'                                     # → the manifest
 ```
 
 Slideshow overrides for fiddling: `/slideshow/?interval=4&refresh=15`.
@@ -207,17 +213,19 @@ projector during dinner.
 - **Open the slideshow before guests arrive** and press Fullscreen. It shows the QR and the couple's
   names until the first photo lands, so an empty screen still recruits uploads.
 - **Nothing appears on screen.** Open the browser console on the slideshow machine. A red
-  "Reconnecting…" badge means `/api/photos` is failing — check `just logs`.
+  "Reconnecting…" badge means `/api/photos` is failing — check `just logs`. A "Locked" badge means
+  that machine has no passcode: open `/?k=...` on it once, then go back to the slideshow.
 - **"My photo isn't showing up."** The manifest is cached for 30 seconds, so give it a minute first.
-  Then `curl '<worker>/api/photos?fresh=1'` — `?fresh=1` skips the cache in both directions and tells
-  a stale manifest apart from an upload that never landed.
+  Then `curl '<worker>/api/photos?fresh=1&k=<passcode>'` — `?fresh=1` skips the cache in both
+  directions and tells a stale manifest apart from an upload that never landed.
 - **A guest says the upload failed.** Ask what the row said. `Scan the QR code again` = wrong/expired
   passcode. `Storage rejected it (403)` = B2 CORS or an expired key. Anything else is usually wifi;
   the Retry button is right there.
 - **Someone uploads something unwelcome.** Delete the object in the B2 web console. It disappears from
   the slideshow within a refresh cycle, and the slideshow skips it immediately if it's already queued.
 - **Turn uploads off after the party:** `npx wrangler secret put EVENT_KEY` with a new value. Every
-  printed card stops working immediately. The slideshow keeps working.
+  printed card stops working immediately — and so does the slideshow, which reads the manifest with
+  the same key. Leave it until the screen is off.
 - **Collect the photos afterwards:** install the B2 CLI and
   `b2 sync b2://<bucket>/photos ./wedding-photos`.
 

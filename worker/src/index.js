@@ -6,6 +6,8 @@ import { AwsClient } from 'aws4fetch';
  *   POST /api/upload-url  → a presigned S3 PUT the guest's browser uploads to
  *   GET  /api/photos      → the current photo list for the slideshow
  *
+ * Both require the event key, in an X-Event-Key header or a ?k= parameter.
+ *
  * Photos are read straight from the public bucket by the browser, so this
  * Worker is never in the path of an actual image. If it falls over mid-party,
  * the slideshow keeps playing what it already has and only new uploads stop.
@@ -117,9 +119,23 @@ async function handleUploadUrl(request, env, cors) {
 /* -- GET /api/photos ------------------------------------------------------- */
 
 async function handlePhotos(request, env, ctx, cors) {
-  // One shared 30s edge cache entry: a room full of reloaded slideshow tabs
-  // still costs B2 two list calls a minute.
+  if (!env.EVENT_KEY || !env.B2_KEY_ID || !env.B2_APP_KEY) {
+    return json({ error: 'misconfigured', message: 'Worker secrets are not set' }, 500, cors);
+  }
+
   const url = new URL(request.url);
+
+  // The bucket hands an object to anyone holding its URL, so the manifest —
+  // the only index of those URLs — is what's actually worth gating. Checked
+  // before the cache is touched, so a warm entry can never be served to a
+  // request that didn't present the key.
+  if (!safeEqual(presentedKey(request, url), env.EVENT_KEY)) {
+    return json({ error: 'forbidden', message: 'Bad or missing event key' }, 403, cors);
+  }
+
+  // One shared 30s edge cache entry: a room full of reloaded slideshow tabs
+  // still costs B2 two list calls a minute. The key deliberately stays out of
+  // the cache key — every guest who gets past the check sees the same list.
   const cache = caches.default;
   const cacheKey = new Request(`${url.origin}/api/photos`, { method: 'GET' });
 
@@ -227,10 +243,24 @@ function corsHeaders(request, env) {
   };
 }
 
+// Header for browsers, ?k= for curl and for anything that would rather not
+// spend a CORS preflight on a custom header.
+function presentedKey(request, url) {
+  return request.headers.get('X-Event-Key') || url.searchParams.get('k') || '';
+}
+
 function decorate(res, cors, cacheState) {
   const out = new Response(res.body, res);
   Object.entries(cors).forEach(([k, v]) => out.headers.set(k, v));
   out.headers.set('x-cache', cacheState);
+
+  // The stored copy says `public` so the Worker's own cache keeps one shared
+  // entry for everyone. What leaves the Worker says `private`: the manifest is
+  // key-gated now, and no intermediary should be holding a copy to hand out.
+  const cc = out.headers.get('cache-control') || '';
+  if (cc.startsWith('public')) {
+    out.headers.set('cache-control', `private, max-age=${LIST_CACHE_SECONDS}`);
+  }
   return out;
 }
 

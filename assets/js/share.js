@@ -1,6 +1,6 @@
 import { config, api } from './config.js';
+import { eventKey as readEventKey } from './event-key.js';
 
-const KEY_STORAGE = 'wps.eventKey';
 const COUNT_STORAGE = 'wps.sharedCount';
 const CONCURRENCY = 2;
 
@@ -61,19 +61,6 @@ function init() {
   el.dropzone.addEventListener('drop', (e) => {
     if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
   });
-}
-
-/* -- event key ------------------------------------------------------------ */
-
-function readEventKey() {
-  const fromUrl = new URLSearchParams(location.search).get('k');
-  if (fromUrl) {
-    store(KEY_STORAGE, fromUrl);
-    return fromUrl;
-  }
-  // A guest who came back later, or wandered off to the slideshow tab and back,
-  // still has it. The link stays intact in the URL so guests can pass it around.
-  return read(KEY_STORAGE) || '';
 }
 
 /* -- queue ---------------------------------------------------------------- */

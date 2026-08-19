@@ -59,7 +59,7 @@ _wait-ready site:
     #!/usr/bin/env bash
     for _ in $(seq 1 90); do
       if curl -sf -m 1 -o /dev/null "http://127.0.0.1:1313{{base}}" \
-         && curl -sf -m 1 -o /dev/null http://127.0.0.1:8787/api/photos \
+         && curl -sf -m 1 -o /dev/null 'http://127.0.0.1:8787/api/photos?k={{key}}' \
          && curl -sf -m 1 -o /dev/null 'http://127.0.0.1:8790/dev-bucket?list-type=2'; then
         printf '\n  ───────────────────────────────────────────────────────────\n'
         printf '   upload:     %s?k=%s\n' '{{site}}' '{{key}}'
@@ -105,10 +105,10 @@ status:
     }
     echo "services:"
     probe site   "http://127.0.0.1:1313{{base}}"  site
-    probe worker http://127.0.0.1:8787/api/photos worker
+    probe worker 'http://127.0.0.1:8787/api/photos?k={{key}}' worker
     probe mockb2 'http://127.0.0.1:8790/dev-bucket?list-type=2' mock
     echo
-    n=$(curl -s -m 2 'http://127.0.0.1:8787/api/photos?fresh=1' 2>/dev/null \
+    n=$(curl -s -m 2 'http://127.0.0.1:8787/api/photos?fresh=1&k={{key}}' 2>/dev/null \
         | node -pe 'try{String(JSON.parse(require("fs").readFileSync(0,"utf8")).count)}catch(e){"?"}' 2>/dev/null || echo '?')
     echo "photos in the pool: $n"
     echo "passcode:           {{key}}"
@@ -128,7 +128,7 @@ smoke:
     url=$(echo "$t" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).uploadUrl')
     pub=$(echo "$t" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).publicUrl')
     echo "2. uploading…    $(curl -s -o /dev/null -w '%{http_code}' -X PUT "$url" -H 'Content-Type: image/jpeg' --data-binary @"$tmp/t.jpg")"
-    echo "3. manifest…     $(curl -s 'http://127.0.0.1:8787/api/photos?fresh=1' | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).count') photo(s)"
+    echo "3. manifest…     $(curl -s 'http://127.0.0.1:8787/api/photos?fresh=1&k={{key}}' | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).count') photo(s)"
     echo "4. reading back… $(curl -s -o /dev/null -w '%{http_code}' "$pub")"
     echo
     echo "all four should be 200 / non-zero. If step 2 failed, the mock isn't running."
