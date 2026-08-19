@@ -2,17 +2,23 @@ name = "photo-share-wedding"
 main = "src/index.js"
 compatibility_date = "2025-11-01"
 
+# The workers.dev route is the only way in — there's no custom domain. Preview
+# URLs are off so superseded versions (including any with a bad B2_PUBLIC_BASE)
+# don't stay reachable at their own per-version URL.
+workers_dev = true
+preview_urls = false
+
 [vars]
 # Everything here is public — it ships in the Worker bundle. Keys go in secrets.
-B2_BUCKET = "wedding-photos-example"
-B2_REGION = "us-west-004"
-B2_ENDPOINT = "https://s3.us-west-004.backblazeb2.com"
-B2_PUBLIC_BASE = "https://f004.backblazeb2.com/file/wedding-photos-example"
+B2_BUCKET = "wedding-photos-joachim-sarah"
+B2_REGION = "eu-central-003"
+B2_ENDPOINT = "https://s3.eu-central-003.backblazeb2.com"
+B2_PUBLIC_BASE = "https://s3.eu-central-003.backblazeb2.com/wedding-photos-joachim-sarah"
 
 # Comma-separated. Must include the deployed Pages origin, and localhost while
 # you develop. An origin missing here is the usual cause of a silent upload
 # failure in the browser console.
-ALLOWED_ORIGINS = "https://GITHUB_USER.github.io,http://localhost:1313"
+ALLOWED_ORIGINS = "https://joachimhorshauge.github.io,http://localhost:1313"
 
 PREFIX = "photos/"
 
