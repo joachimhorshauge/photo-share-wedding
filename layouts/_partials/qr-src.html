@@ -1,0 +1,8 @@
+{{- /*
+  Returns the QR image *resource* for the upload link, passcode included, so
+  callers can use both its RelPermalink and its dimensions.
+  Usage: {{ $qr := partial "qr-src.html" (dict "scale" 8) }}
+*/ -}}
+{{- $key := site.Params.eventKey | default "" -}}
+{{- $url := cond (eq $key "") (absURL "") (printf "%s?k=%s" (absURL "") (urlquery $key)) -}}
+{{- return (images.QR $url (dict "level" "medium" "scale" (.scale | default 6))) -}}

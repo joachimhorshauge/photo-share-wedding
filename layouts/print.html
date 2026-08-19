@@ -1,27 +1,33 @@
 {{ define "bodyclass" }}page-print{{ end }}
 
-{{ define "chrome" }}{{ end }}
+{{/* Empty-looking overrides need a non-empty body — see the note in
+     slideshow.html about Go treating an empty define as undefined. */}}
+{{ define "chrome" }}<!-- no site nav on the QR page -->{{ end }}
 
 {{ define "main" }}
-<main class="sheet">
-  {{/* Two identical cards per A4 sheet: cut along the middle, fold, table tent. */}}
-  {{ range seq 2 }}
-  <section class="card-print">
-    <p class="eyebrow">{{ site.Params.coupleNames }}</p>
-    <h1>Share your photos</h1>
-    {{ partial "qr.html" (dict "scale" 8 "class" "qr qr-print") }}
-    <ol class="steps">
-      <li>Point your camera at the code.</li>
-      <li>Open the link it offers.</li>
-      <li>Pick your photos — they appear on the big screen within a minute.</li>
-    </ol>
-    <p class="card-foot">{{ dateFormat "2 January 2006" (site.Params.eventDate | default now) }}</p>
-  </section>
-  {{ end }}
+{{/* Scale 20 so the PNG is big enough to drop into a printed design without
+     resampling; CSS shows it smaller. Each module is `scale` pixels square. */}}
+{{ $qr := partial "qr-src.html" (dict "scale" 20) }}
+<main class="qr-page">
+  <img class="qr-asset"
+       src="{{ $qr.RelPermalink }}"
+       width="{{ $qr.Width }}" height="{{ $qr.Height }}"
+       alt="QR code linking to the photo upload page">
 
-  <p class="print-note no-print">
-    Press ⌘/Ctrl&nbsp;+&nbsp;P. Two cards per sheet, sized to fold in half.
-    The passcode is inside the QR code, so nothing on the card gives it away in a photo of the table.
-  </p>
+  {{/* Everything below is for whoever is building the artwork, and never
+       prints — a sheet with this on it should be the code and nothing else. */}}
+  <aside class="qr-meta no-print">
+    <p>
+      <a class="qr-download" href="{{ $qr.RelPermalink }}" download="wedding-qr.png">
+        Download PNG — {{ $qr.Width }}&times;{{ $qr.Height }}
+      </a>
+    </p>
+    <p class="qr-target">Encodes: <code>{{ absURL "" }}?k={{ site.Params.eventKey }}</code></p>
+    <p class="qr-hint">
+      Black on opaque white. Composite it with a multiply blend if you need it on
+      a coloured background, and keep a quiet margin the width of four modules
+      around it or scanners will struggle.
+    </p>
+  </aside>
 </main>
 {{ end }}

@@ -288,43 +288,39 @@ a { color: var(--gold-deep); }
 
 .hud-error[hidden] { display: none; }
 
-/* --- printable table card ------------------------------------------------ */
+/* --- the QR asset page ---------------------------------------------------- */
 
-.sheet { max-width: 48rem; margin: 0 auto; padding: 1rem; }
-
-.card-print {
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
-  padding: 2rem 1.5rem;
-  margin-bottom: 1rem;
-  text-align: center;
-  break-inside: avoid;
-  height: 13.5cm;                /* two per A4 sheet, cut across the middle */
+/* Deliberately bare: this page exists to hand you the code itself, either on
+   paper or as a PNG to drop into someone else's artwork. */
+.qr-page {
+  min-height: 100vh;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: .75rem;
+  gap: 2rem;
+  padding: 2rem 1rem;
 }
 
-.card-print h1 { font-size: 1.9rem; }
-.qr-print { width: 6.5cm; height: auto; image-rendering: pixelated; }
-
-.steps {
-  text-align: left;
-  margin: 0;
-  padding-left: 1.2rem;
-  font-size: .9rem;
-  color: var(--ink-soft);
-  max-width: 22rem;
+/* Capped in rem rather than shown at native size — the PNG is deliberately
+   oversized so it survives being placed in print. */
+.qr-asset {
+  width: min(20rem, 80vw);
+  height: auto;
+  image-rendering: pixelated;   /* keep module edges crisp when scaled */
+  background: #fff;             /* a QR needs its quiet zone to stay white */
 }
 
-.card-foot { margin: 0; font-family: var(--serif); font-style: italic; color: var(--gold); }
-.print-note { font-size: .85rem; color: var(--ink-soft); text-align: center; }
+.qr-meta { text-align: center; max-width: 30rem; font-size: .9rem; color: var(--ink-soft); }
+.qr-meta p { margin: 0 0 .75rem; }
+.qr-download { font-weight: 600; }
+.qr-target code { word-break: break-all; font-size: .85em; }
+.qr-hint { font-size: .82rem; line-height: 1.5; }
 
 @media print {
   .no-print { display: none; }
   body { background: #fff; }
-  .sheet { padding: 0; max-width: none; }
-  .card-print { border-color: #ccc; margin: 0; box-shadow: none; }
-  @page { size: A4; margin: 8mm; }
+  /* Nothing but the code on the page, centred on the sheet. */
+  .qr-page { min-height: auto; padding: 0; gap: 0; }
+  .qr-asset { width: 9cm; }
+  @page { size: A4; margin: 12mm; }
 }
 
 @media (prefers-reduced-motion: reduce) {

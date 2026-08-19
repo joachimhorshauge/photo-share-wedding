@@ -1,8 +1,13 @@
 {{ define "bodyclass" }}page-slideshow{{ end }}
 
 {{/* No persistent nav on a projected screen — it lives in the HUD, which fades
-     out with the cursor after a few seconds of stillness. */}}
-{{ define "chrome" }}{{ end }}
+     out with the cursor after a few seconds of stillness.
+
+     The HTML comment is load-bearing: Go's template package treats a define
+     with an empty parse tree as though it were never defined, so `{{ define
+     "chrome" }}{{ end }}` silently falls through to baseof's default nav. The
+     minifier strips the comment from the output. */}}
+{{ define "chrome" }}<!-- no site nav on the projected screen -->{{ end }}
 
 {{ define "main" }}
 <main class="stage" id="stage">
